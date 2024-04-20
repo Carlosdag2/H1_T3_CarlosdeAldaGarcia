@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Información del Tiempo</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="container py-5">
+    <header>
+        <img src="tiempo.png" alt="Logo" class="img-fluid logo">
+        <h1 class="mb-4">Información del Tiempo</h1>
+    </header>
+    <select class="form-select" id="provincias"></select>
+    <div id="weather-info"></div>
+</div>
+<script>
+    async function obtenerDatos(provincia) {
+        const url = 'https://www.el-tiempo.net/api/json/v2/provincias/' + provincia;
+        try {
+            const respuesta = await fetch(url);
+            if (!respuesta.ok) {
+                throw new Error(`HTTP error! status: ${respuesta.status}`);
+            }
+            const datos = await respuesta.json();
+            return datos;
+        } catch (error) {
+            console.log('Hubo un problema con la petición Fetch:' + error.message);
+            document.getElementById('weather-info').textContent = 'Hubo un problema al obtener los datos del tiempo.';
+        }
+    }
+
+    document.getElementById('provincias').addEventListener('change', (event) => {
+        obtenerDatos(event.target.value).then(datos => {
+            if (datos) {
+                mostrarDatos(datos);
+            }
+        });
+    });
+
+
+    function mostrarDatos(datos) {
+        const contenedor = document.getElementById('weather-info');
+        contenedor.innerHTML = '';
+
+        const titulo = document.createElement('h2');
+        titulo.textContent = decodeURIComponent(escape(datos.title));
+        contenedor.appendChild(titulo);
+
+        const hoy = document.createElement('p');
+        hoy.textContent = `Hoy: ${decodeURIComponent(escape(datos.today.p))}`;
+        hoy.style.textAlign = 'justify';
+        contenedor.appendChild(hoy);
+
+        const manana = document.createElement('p');
+        manana.textContent = `Mañana: ${decodeURIComponent(escape(datos.tomorrow.p))}`;
+        manana.style.textAlign = 'justify';
+        contenedor.appendChild(manana);
+
+        datos.ciudades.forEach(ciudad => {
+            const tarjetaCiudad = document.createElement('div');
+            tarjetaCiudad.className = 'weather-card';
+
+            const nombreCiudad = document.createElement('h3');
+            nombreCiudad.textContent = decodeURIComponent(escape(ciudad.name));
+            tarjetaCiudad.appendChild(nombreCiudad);
+
+            const estadoCielo = document.createElement('p');
+            estadoCielo.textContent = `Estado del cielo: ${decodeURIComponent(escape(ciudad.stateSky.description))}`;
+            tarjetaCiudad.appendChild(estadoCielo);
+
+            const temperaturas = document.createElement('p');
+            const temperaturaMaxima = document.createElement('span');
+            temperaturaMaxima.textContent = `Temperatura máxima: ${ciudad.temperatures.max} ºC, `;
+            temperaturaMaxima.style.color = 'red';
+            temperaturas.appendChild(temperaturaMaxima);
+
+            const temperaturaMinima = document.createElement('span');
+            temperaturaMinima.textContent = `Temperatura mínima: ${ciudad.temperatures.min} ºC`;
+            temperaturaMinima.style.color = 'blue';
+            temperaturas.appendChild(temperaturaMinima);
+
+            tarjetaCiudad.appendChild(temperaturas);
+
+            contenedor.appendChild(tarjetaCiudad);
+        });
+    }
+
+
+    async function obtenerProvincias() {
+        const url = 'https://www.el-tiempo.net/api/json/v2/provincias';
+        try {
+            const respuesta = await fetch(url);
+            if (!respuesta.ok) {
+                throw new Error(`HTTP error! status: ${respuesta.status}`);
+            }
+            const datos = await respuesta.json();
+            const select = document.getElementById('provincias');
+            datos.provincias.forEach(provincia => {
+                const option = document.createElement('option');
+                option.value = provincia.CODPROV;
+                option.textContent = provincia.NOMBRE_PROVINCIA;
+                select.appendChild(option);
+            });
+        } catch (error) {
+            console.log('Hubo un problema con la petición Fetch:' + error.message);
+        }
+    }
+    obtenerProvincias();
+</script>
+</body>
+</html>
